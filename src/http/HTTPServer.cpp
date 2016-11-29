@@ -6,13 +6,15 @@
 // Constrain maximum number of characters in path:
 #define HTTP_PATH_MAXLEN 150
 
+// Constrain length of payload (in bytes):
 #define HTTP_PAYLOAD_MEDIATYPE_MAXLEN 1024
 
 namespace wot {
 
-char method[HTTP_METHOD_MAXLEN];
-char path[HTTP_PATH_MAXLEN];
-char payloadMediaType[HTTP_PAYLOAD_MEDIATYPE_MAXLEN];
+// Keep these buffers in .data . Don't fragment the heap!
+char method[HTTP_METHOD_MAXLEN]; // Buffer for the currently processed HTTP method
+char path[HTTP_PATH_MAXLEN]; // Buffer for the currently processed path
+char payloadMediaType[HTTP_PAYLOAD_MEDIATYPE_MAXLEN]; // Buffer for the payload
 
 bool extractContentType(WiFiClient *client, char *contentType, unsigned len)
 {
