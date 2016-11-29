@@ -40,7 +40,7 @@ bool extractContentType(WiFiClient *client, char *contentType, unsigned len)
     } while(true);
 }
 
-bool readUntilPayload(WiFiClient *client)
+void readUntilPayload(WiFiClient *client)
 {
     bool payloadFound = false;
     do {
