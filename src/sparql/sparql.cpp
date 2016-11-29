@@ -23,7 +23,7 @@ inline void readUntilPayload(WiFiClient *client)
     } while(!payloadFound);
 }
 
-unsigned wot::queryEquivalentClasses(const char *iri, char **out, unsigned char entryCount, unsigned entryLen)
+unsigned short wot::queryEquivalentClasses(const char *iri, char **out, unsigned char entryCount, unsigned entryLen)
 {
     WiFiClient con;
     if(con.connect("lov.okfn.org", 80)) {
@@ -57,6 +57,7 @@ unsigned wot::queryEquivalentClasses(const char *iri, char **out, unsigned char 
             // Read stream until payload:
             readUntilPayload(&con);
 
+            // Parse JSON and write results:
             aJsonObject *root = aJson.parse((char*)con.readString().c_str());
             if(root) {
                 aJsonObject *results = aJson.getObjectItem(root, "results");
@@ -82,12 +83,7 @@ unsigned wot::queryEquivalentClasses(const char *iri, char **out, unsigned char 
             }
 
             aJson.deleteItem(root);
-        } else {
-            Serial.println(statusLine);
         }
-
-    } else {
-        Serial.println("Cannot connect to SPARQL-endpoint at lov.okfn.org");
     }
-    return 0;
+    return -1;
 }
