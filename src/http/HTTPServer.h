@@ -14,13 +14,18 @@ namespace wot {
     private:
         WiFiServer *server; // Internally used TCP-server
 
+        char *hostname; // The name of the machine
+
+        unsigned short port; // The port server is listening on
 
     protected:
         /**
         * Creates and binds the server to a port.
         * port: The port the server should be bound to.
+        * hostname: The name of the machine in the network. If NULL its
+        *           WiFi-IP address will be used.
         */
-        HTTPServer(unsigned short port);
+        HTTPServer(unsigned short port, const char *hostname = NULL);
 
         ~HTTPServer();
 
@@ -91,6 +96,16 @@ namespace wot {
         * Call this method before the first call of loop() (e.g. in arduinos setup()).
         */
         void begin();
+
+        /**
+        * Returns the port the server is listening on.
+        */
+        unsigned short getPort();
+
+        /**
+        * Returns the hostname of the server.
+        */
+        const char *getHostname();
     };
 }
 

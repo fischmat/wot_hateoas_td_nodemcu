@@ -1,5 +1,6 @@
 #include "HTTPServer.h"
 #include "../util.h"
+#include <ESP8266WiFi.h>
 
 // Maximum number of characters for HTTP method (DELETE + \0):
 #define HTTP_METHOD_MAXLEN 7
@@ -52,15 +53,29 @@ void readUntilPayload(WiFiClient *client)
     } while(!payloadFound);
 }
 
-HTTPServer::HTTPServer(unsigned short port)
+HTTPServer::HTTPServer(unsigned short p, const char *hn)
+    : port(p)
 {
     server = new WiFiServer(port);
+    // Copy the hostname if explicitly specified:
+    if(hn) {
+        unsigned hostnameLen = strlen(hn) + 1;
+        hostname = new char[hostnameLen];
+        strcpy_s(hostname, hostnameLen, hn);
+    } else {
+        hostname = new char[16];
+        IPAddress ipAddr = WiFi.localIP();
+        sprintf(hostname, "%d.%d.%d.%d", ipAddr[0], ipAddr[1], ipAddr[2], ipAddr[3]);
+    }
 }
 
 HTTPServer::~HTTPServer()
 {
     if(server) {
         delete server;
+    }
+    if(hostname) {
+        delete[] hostname;
     }
 }
 
@@ -174,6 +189,16 @@ void HTTPServer::respondMethodNotAllowed(WiFiClient *client)
     client->print("HTTP/1.1 405 Method Not Allowed\r\n\r\n");
     client->flush();
     client->stop();
+}
+
+unsigned short HTTPServer::getPort()
+{
+    return port;
+}
+
+const char *HTTPServer::getHostname()
+{
+    return hostname;
 }
 
 }
