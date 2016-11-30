@@ -9,7 +9,7 @@ class RoomLightThing : public HTTPServer
 {
 public:
     // Available colors for this thing:
-    enum Color {White, Red}
+    enum Color {White, Red};
 private:
     bool powerOn; // Whether the light is currently on
 
@@ -33,6 +33,15 @@ public:
     * flashingIntervalMs: Amount of milliseconds between two flashes.
     */
     RoomLightThing(unsigned short port, unsigned char *gpioMap, bool activeLow = true, unsigned flashingIntervalMs = 250);
+
+protected:
+    virtual void handleGET(const char *path, WiFiClient *client);
+
+    virtual void handlePOST(const char *path, const char *mediaType, const char *data, WiFiClient *client);
+
+    virtual void handlePUT(const char *path, WiFiClient *client);
+
+    virtual void handleDELETE(const char *path, WiFiClient *client);
 
 private:
     /**
