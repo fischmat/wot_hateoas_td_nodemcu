@@ -14,7 +14,7 @@
 		{
 			"@type": "dogont:OnOffState",
 			"name": "Powerstate",
-			"valueType": {"type": "boolean"},
+			"valueType": {"type": "string", "enum": ["on", "off"]},
 			"writeable": true,
 			"hrefs": ["onoff"],
 			"stability": -1
@@ -40,7 +40,7 @@
 			"stability": "%d"
 		}
 	],
-	
+
 	"actions": [
 		{
 			"@type": "dogont:OnFlashingCommand",
