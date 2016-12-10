@@ -1,7 +1,8 @@
 #include "RoomLightThing.h"
+#include "../ajson/aJSON.h"
 
 // TODO: Change for HATEOAS approach
-#define WOT_IFACE_TD
+//#define WOT_IFACE_TD
 
 #ifdef WOT_IFACE_TD
 #warning Compiling RoomLightThing in TD mode
@@ -101,13 +102,48 @@ void wot::RoomLightThing::serveRoot(WiFiClient *client)
     client->printf("Content-Length: %d\r\n\r\n", strlen((char*)&buffer));
     client->print((char*)&buffer);
 #else
-    #warning Method not implemented for HATEOAS
+    client->print("HTTP/1.1 200 OK\r\nContent-Type: application/roomlight+json\r\n");
+    const char *payload = "{\
+        	\"_links\": {\
+        		\"onoff\": {\
+        			\"href\": \"/onoff\",\
+        			\"type\": \"text/plain\"\
+        		},\
+        		\"colour\": {\
+        			\"href\": \"/colour\",\
+        			\"type\": \"text/plain\"\
+        		}\
+        	},\
+        	\"_forms\": {\
+        		\"onoff\": {\
+        			\"href\": \"/onoff\",\
+        			\"method\": \"POST\",\
+        			\"accept\": \"text/plain\"\
+        		},\
+        		\"colour\": {\
+        			\"href\": \"/colour\",\
+        			\"method\": \"POST\",\
+        			\"accept\": \"text/plain\"\
+        		},\
+        		\"strobeon\": {\
+        			\"href\": \"/strobeon\",\
+        			\"method\": \"POST\",\
+        			\"accept\": \"application/light-strobe-config+json\"\
+        		},\
+        		\"strobeoff\": {\
+        			\"href\": \"/strobeoff\",\
+        			\"method\": \"POST\"\
+        		}\
+        	},\
+        	\"name\": \"Room Light\",\
+        	\"vendor\": \"WoT Experts Group\"\
+        }";
+        client->printf("Content-Length: %d\r\n\r\n%s", strlen(payload), payload);
 #endif
 }
 
 void wot::RoomLightThing::serveOnOffState(WiFiClient *client)
 {
-#ifdef WOT_IFACE_TD
     client->print("HTTP/1.1 200 OK\r\n");
     client->print("Content-Type: text/plain\r\n");
 
@@ -116,14 +152,10 @@ void wot::RoomLightThing::serveOnOffState(WiFiClient *client)
     } else {
         client->print("Content-Length: 3\r\n\r\noff");
     }
-#else
-    #warning Method not implemented for HATEOAS
-#endif
 }
 
 void wot::RoomLightThing::serveColourState(WiFiClient *client)
 {
-#ifdef WOT_IFACE_TD
     const char *colorStr;
     if(currentColor == Color::White) {
         colorStr = "white";
@@ -135,14 +167,10 @@ void wot::RoomLightThing::serveColourState(WiFiClient *client)
     client->print("Content-Type: text/plain\r\n");
     client->printf("Content-Length: %d\r\n\r\n", strlen(colorStr));
     client->print(colorStr);
-#else
-    #warning Method not implemented for HATEOAS
-#endif
 }
 
 void wot::RoomLightThing::updateOnOffState(WiFiClient *client, const char *data)
 {
-#ifdef WOT_IFACE_TD
     // Set the new power state:
     if(!strcmp(data, "on")) {
         powerOn = true;
@@ -152,14 +180,10 @@ void wot::RoomLightThing::updateOnOffState(WiFiClient *client, const char *data)
         respondBadRequest(client);
     }
     client->print("HTTP/1.1 200 OK\r\n\r\n");
-#else
-    #warning Method not implemented for HATEOAS
-#endif
 }
 
 void wot::RoomLightThing::updateColourState(WiFiClient *client, const char *data)
 {
-#ifdef WOT_IFACE_TD
     if(!strcmp(data, "white")) {
         currentColor = Color::White;
     } else if(!strcmp(data, "red")) {
@@ -168,9 +192,6 @@ void wot::RoomLightThing::updateColourState(WiFiClient *client, const char *data
         respondBadRequest(client);
     }
     client->print("HTTP/1.1 200 OK\r\n\r\n");
-#else
-    #warning Method not implemented for HATEOAS
-#endif
 }
 
 void wot::RoomLightThing::updateStrobeOn(WiFiClient *client, const char *data)
@@ -186,18 +207,26 @@ void wot::RoomLightThing::updateStrobeOn(WiFiClient *client, const char *data)
         respondBadRequest(client);
     }
 #else
-    #warning Method not implemented for HATEOAS
+    aJsonObject *root = aJson.parse((char*)data);
+    aJsonObject *duration = aJson.getObjectItem(root, "duration");
+    double secs = duration->valuefloat;
+    aJson.deleteItem(root);
+
+    if(secs > 0.0) {
+        powerOn = true; // Turn power on if someone wishes the strobe mode
+        flashingMsRemaining = secs * 1000.0;
+        client->print("HTTP/1.1 200 OK\r\n\r\n");
+
+    } else {
+        respondBadRequest(client);
+    }
 #endif
 }
 
 void wot::RoomLightThing::updateStrobeOff(WiFiClient *client)
 {
-#ifdef WOT_IFACE_TD
     flashingMsRemaining = 0;
     client->print("HTTP/1.1 200 OK\r\n\r\n");
-#else
-    #warning Method not implemented for HATEOAS
-#endif
 }
 
 void wot::RoomLightThing::handleGET(const char *path, WiFiClient *client)
@@ -223,9 +252,17 @@ void wot::RoomLightThing::handlePOST(const char *path, const char *data, const c
     } else if(!strcmp(path, "/")) {
         respondMethodNotAllowed(client);
     } else if(!strcmp(path, "/strobeon")) {
+#ifdef WOT_IFACE_TD
         updateStrobeOn(client, data);
+#else
+        if(!strcmp(mediaType, "application/light-strobe-config+json")) {
+            updateStrobeOn(client, data);
+        } else {
+            respondUnsupportedMediaType(client);
+        }
+#endif
     } else if(!strcmp(path, "/strobeoff")) {
-        updateStrobeOff(client);
+    updateStrobeOff(client);
     } else {
         respondNotFound(client);
     }

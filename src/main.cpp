@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "wifi.h"
 #include "discovery/scan.h"
-#include "td/RoomLightThing.h"
+#include "things/RoomLightThing.h"
 #include "sparql/sparql.h"
 
 using namespace wot;
@@ -23,7 +23,7 @@ void setup() {
     gpioMap[RoomLightThing::Color::Red] = 4;
     gpioMap[RoomLightThing::Color::White] = 5;
 
-    server = new RoomLightThing(80, gpioMap, false, 1000);
+    server = new RoomLightThing(80, gpioMap, false, 250);
 
     server->begin();
     /*IPAddress onlineHosts[16];
