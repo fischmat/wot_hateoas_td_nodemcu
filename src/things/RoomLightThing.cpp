@@ -19,12 +19,16 @@ wot::RoomLightThing::RoomLightThing(unsigned short port, unsigned char *gm, bool
                     currentColor(Color::White), flashingMsRemaining(0)
 {
     #ifdef WOT_IFACE_TD
-    Serial.printf("Room light thing online at %s:%d/ with Thing Description...\n", getHostname(), getPort());
+    Serial.printf("Room light thing online at http://%s:%d/ with Thing Description...\n", getHostname(), getPort());
     #else
-    Serial.printf("Room light thing online at %s:%d/ with HATEOAS approach...\n", getHostname(), getPort());
+    Serial.printf("Room light thing online at http://%s:%d/ with HATEOAS approach...\n", getHostname(), getPort());
     #endif
     gpioMap[Color::White] = gm[Color::White];
     gpioMap[Color::Red] = gm[Color::Red];
+    pinMode(gpioMap[Color::White], OUTPUT);
+    digitalWrite(gpioMap[Color::White], activeLow ? HIGH : LOW);
+    pinMode(gpioMap[Color::Red], OUTPUT);
+    digitalWrite(gpioMap[Color::Red], activeLow ? HIGH :  LOW);
 }
 
 void wot::RoomLightThing::serveRoot(WiFiClient *client)
@@ -106,12 +110,11 @@ void wot::RoomLightThing::serveOnOffState(WiFiClient *client)
 #ifdef WOT_IFACE_TD
     client->print("HTTP/1.1 200 OK\r\n");
     client->print("Content-Type: text/plain\r\n");
-    client->print("Content-Length: 4\r\n\r\n");
 
     if(powerOn) {
-        client->print("true");
+        client->print("Content-Length: 2\r\n\r\non");
     } else {
-        client->print("false");
+        client->print("Content-Length: 3\r\n\r\noff");
     }
 #else
     #warning Method not implemented for HATEOAS
@@ -175,7 +178,8 @@ void wot::RoomLightThing::updateStrobeOn(WiFiClient *client, const char *data)
 #ifdef WOT_IFACE_TD
     double secs = atof(data);
     if(secs > 0.0) {
-        flashingMsRemaining = secs * 1000;
+        powerOn = true; // Turn power on if someone wishes the strobe mode
+        flashingMsRemaining = secs * 1000.0;
         client->print("HTTP/1.1 200 OK\r\n\r\n");
 
     } else {
@@ -218,6 +222,10 @@ void wot::RoomLightThing::handlePOST(const char *path, const char *data, const c
         updateColourState(client, data);
     } else if(!strcmp(path, "/")) {
         respondMethodNotAllowed(client);
+    } else if(!strcmp(path, "/strobeon")) {
+        updateStrobeOn(client, data);
+    } else if(!strcmp(path, "/strobeoff")) {
+        updateStrobeOff(client);
     } else {
         respondNotFound(client);
     }
@@ -232,4 +240,38 @@ void wot::RoomLightThing::handlePUT(const char *path, WiFiClient *client)
 void wot::RoomLightThing::handleDELETE(const char *path, WiFiClient *client)
 {
     respondMethodNotAllowed(client);
+}
+
+void wot::RoomLightThing::loop()
+{
+    HTTPServer::loop();
+
+    delay(10);
+
+    if(powerOn) {
+        for(int col = Color::White; col <= Color::Red; col++) {
+            int voltage;
+            if(col == currentColor) {
+                if(flashingMsRemaining > 0) { // Currently in strobe mode?
+                    flashingMsRemaining -= 10;
+                    flashingPhaseProgressMs += 10;
+                    if(flashingPhaseProgressMs > flashingIntervalMs) {
+                        flashingPhasePowerOn = !flashingPhasePowerOn;
+                        flashingPhaseProgressMs = 0;
+                    }
+                    voltage = flashingPhasePowerOn ? (activeLow ? LOW : HIGH) : (activeLow ? HIGH : LOW);
+                } else {
+                    voltage = activeLow ? LOW : HIGH;
+                }
+            } else {
+                voltage = activeLow ? HIGH : LOW;
+            }
+
+            digitalWrite(gpioMap[col], voltage);
+        }
+    } else {
+        for(int col = Color::White; col <= Color::Red; col++) {
+            digitalWrite(gpioMap[col], activeLow ? HIGH : LOW);
+        }
+    }
 }

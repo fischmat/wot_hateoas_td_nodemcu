@@ -19,6 +19,10 @@ private:
 
     unsigned flashingMsRemaining; // Milleseconds remaining in flashing mode. 0 if currently not flashing
 
+    unsigned flashingPhaseProgressMs; // Progress of the current flashing interval in ms
+
+    bool flashingPhasePowerOn; // Whether power is on in the current flashing phase
+
     unsigned char gpioMap[2]; // Mapping from Color to GPIO numbers.
 
     bool activeLow; // Whether the lights are controlled active-low.
@@ -32,7 +36,7 @@ public:
     * activeLow: Whether the lights are controlled active-low.
     * flashingIntervalMs: Amount of milliseconds between two flashes.
     */
-    RoomLightThing(unsigned short port, unsigned char *gpioMap, bool activeLow = true, unsigned flashingIntervalMs = 250);
+    RoomLightThing(unsigned short port, unsigned char *gpioMap, bool activeLow = true, unsigned flashingIntervalMs = 100);
 
 protected:
     virtual void handleGET(const char *path, WiFiClient *client);
@@ -42,6 +46,9 @@ protected:
     virtual void handlePUT(const char *path, WiFiClient *client);
 
     virtual void handleDELETE(const char *path, WiFiClient *client);
+
+public:
+    void loop();
 
 private:
     /**

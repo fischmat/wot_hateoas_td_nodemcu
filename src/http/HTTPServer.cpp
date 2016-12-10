@@ -155,7 +155,7 @@ void HTTPServer::loop()
             return;
         }
         readUntilPayload(&client);
-        this->handlePOST((const char*)&path, (const char*)&payloadMediaType,  client.readString().c_str(), &client);
+        this->handlePOST((const char*)&path, client.readString().c_str(), (const char*)&payloadMediaType, &client);
     } else if(method[0] == 'P' && method[1] == 'U') {
         this->handlePUT((const char *)&path, &client);
     } else if(method[0] == 'D') {
