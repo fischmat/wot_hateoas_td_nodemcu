@@ -3,7 +3,8 @@
 		"http://w3c.github.io/wot/w3c-wot-td-context.jsonld",
 		{"dogont": "http://elite.polito.it/ontologies/dogont.owl#"},
 		{"dbr": "dbpedia.org/resource/"},
-		{"dbo": "dbpedia.org/ontology/"}
+		{"dbo": "dbpedia.org/ontology/"},
+        {"ncal": "http://www.semanticdesktop.org/ontologies/2007/04/02/ncal#"}
 	],
 	"@type": "dogont:Lighting",
 	"name": "Room Light",
@@ -24,7 +25,7 @@
 			"name": "Color",
 			"valueType": {
 				"type": "string",
-				"options": [
+				"oneOf": [
 					{
 						"value": "white",
 						"dbo:Colour": "dbr:White"
@@ -42,6 +43,23 @@
 	],
 
 	"actions": [
+        {
+            "@type": "ncal:AlarmAction",
+            "name": "Turn on alarm",
+            "inputData": {
+                "valueType": "string",
+                "oneOf": [
+                    {
+                        "constant": "white",
+                        "dbo:Colour": "dbr:White"
+                    },
+                    {
+                        "constant": "red",
+                        "dbo:Colour": "dbr:Red"
+                    }
+                ]
+            }
+        },
 		{
 			"@type": "dogont:OnFlashingCommand",
 			"name": "Turn Strobe On",

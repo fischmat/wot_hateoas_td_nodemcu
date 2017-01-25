@@ -145,23 +145,41 @@ void wot::RoomLightThing::serveRoot(WiFiClient *client)
 void wot::RoomLightThing::serveOnOffState(WiFiClient *client)
 {
     client->print("HTTP/1.1 200 OK\r\n");
-    client->print("Content-Type: text/plain\r\n");
 
+#if WOT_IFACE_TD
+    client->print("Content-Type: application/json\r\n");
+    if(powerOn) {
+        client->print("Content-Length: 15\r\n\r\n{\"value\": \"on\"}");
+    } else {
+        client->print("Content-Length: 16\r\n\r\n{\"value\": \"off\"}");
+    }
+#else
+    client->print("Content-Type: text/plain\r\n");
     if(powerOn) {
         client->print("Content-Length: 2\r\n\r\non");
     } else {
         client->print("Content-Length: 3\r\n\r\noff");
     }
+#endif
 }
 
 void wot::RoomLightThing::serveColourState(WiFiClient *client)
 {
+#if WOT_IFACE_TD
+    const char *colorStr;
+    if(currentColor == Color::White) {
+        colorStr = "{\"value\": \"white\"}";
+    } else {
+        colorStr = "{\"value\": \"red\"}";
+    }
+#else
     const char *colorStr;
     if(currentColor == Color::White) {
         colorStr = "white";
     } else {
         colorStr = "red";
     }
+#endif
 
     client->print("HTTP/1.1 200 OK\r\n");
     client->print("Content-Type: text/plain\r\n");
@@ -257,6 +275,16 @@ void wot::RoomLightThing::handlePOST(const char *path, const char *data, const c
 #else
         if(!strcmp(mediaType, "application/light-strobe-config+json")) {
             updateStrobeOn(client, data);
+        } else {
+            respondUnsupportedMediaType(client);
+        }
+#endif
+    } else if(!strcmp(path, "/alarm")) {
+#ifdef WOT_IFACE_TD
+        updateStrobeOn(client, "10000");
+#else
+        if(!strcmp(mediaType, "application/light-strobe-config+json")) {
+            updateStrobeOn(client, "10000");
         } else {
             respondUnsupportedMediaType(client);
         }

@@ -23,8 +23,8 @@
 		},
 		"strobeon": {
 			"href": "/strobeon",
-			"method": "application/light-strobe-config+json",
-			"accept":
+			"method": "POST",
+			"accept": "application/light-strobe-config+json"
 		},
 		"strobeoff": {
 			"href": "/strobeoff",

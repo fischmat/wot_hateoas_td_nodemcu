@@ -5,7 +5,7 @@
 #include "sparql/sparql.h"
 
 using namespace wot;
-using namespace std;
+using namespace std;-ge
 
 RoomLightThing *server = NULL;
 
