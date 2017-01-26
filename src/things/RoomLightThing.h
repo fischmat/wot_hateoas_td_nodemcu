@@ -85,6 +85,11 @@ private:
     * Turn the strobe mode off.
     */
     void updateStrobeOff(WiFiClient *client);
+
+    /**
+    * Turn on the strobing alarm.
+    */
+    void invokeAlarm(WiFiClient *client);
 };
 
 }

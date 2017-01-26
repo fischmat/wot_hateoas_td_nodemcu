@@ -2,7 +2,7 @@
 #include "../ajson/aJSON.h"
 
 // TODO: Change for HATEOAS approach
-//#define WOT_IFACE_TD
+#define WOT_IFACE_TD
 
 #ifdef WOT_IFACE_TD
 #warning Compiling RoomLightThing in TD mode
@@ -43,8 +43,9 @@ void wot::RoomLightThing::serveRoot(WiFiClient *client)
     	\"@context\": [\
     		\"http://w3c.github.io/wot/w3c-wot-td-context.jsonld\",\
     		{\"dogont\": \"http://elite.polito.it/ontologies/dogont.owl#\"},\
-    		{\"dbr\": \"dbpedia.org/resource/\"},\
-    		{\"dbo\": \"dbpedia.org/ontology/\"}\
+    		{\"dbr\": \"http://dbpedia.org/resource/\"},\
+    		{\"dbo\": \"http://dbpedia.org/ontology/\"},\
+            {\"ncal\": \"http://www.semanticdesktop.org/ontologies/2007/04/02/ncal#\"}\
     	],\
     	\"@type\": \"dogont:Lighting\",\
     	\"name\": \"Room Light\",\
@@ -57,7 +58,7 @@ void wot::RoomLightThing::serveRoot(WiFiClient *client)
     			\"name\": \"Powerstate\",\
     			\"valueType\": {\"type\": \"string\", \"enum\": [\"on\", \"off\"]},\
     			\"writeable\": true,\
-    			\"hrefs\": [\"onoff\"],\
+    			\"hrefs\": [\"/onoff\"],\
     			\"stability\": -1\
     		},\
     		{\
@@ -65,19 +66,19 @@ void wot::RoomLightThing::serveRoot(WiFiClient *client)
     			\"name\": \"Color\",\
     			\"valueType\": {\
     				\"type\": \"string\",\
-    				\"options\": [\
+    				\"oneOf\": [\
     					{\
-    						\"value\": \"white\",\
+    						\"constant\": \"white\",\
     						\"dbo:Colour\": \"dbr:White\"\
     					},\
     					{\
-    						\"value\": \"red\",\
+    						\"constant\": \"red\",\
     						\"dbo:Colour\": \"dbr:Red\"\
     					}\
     				]\
     			},\
     			\"writeable\": true,\
-    			\"hrefs\": [\"colour\"],\
+    			\"hrefs\": [\"/colour\"],\
     			\"stability\": \"%d\"\
     		}\
     	],\
@@ -89,13 +90,19 @@ void wot::RoomLightThing::serveRoot(WiFiClient *client)
     				\"valueType\": \"number\",\
     				\"dogont:flashingTime\": \"dbr:Second\"\
     			},\
-    			\"hrefs\": [\"strobeon\"]\
+    			\"hrefs\": [\"/strobeon\"]\
     		},\
     		{\
     			\"@type\": \"dogont:OffFlashingCommand\",\
     			\"name\": \"Turn Strobe Off\",\
-    			\"hrefs\": [\"strobeoff\"]\
-    		}\
+    			\"hrefs\": [\"/strobeoff\"]\
+    		},\
+            {\
+                \"@type\": \"ncal:Alarm\",\
+                \"name\": \"Red flashing alarm\",\
+                \"inputData\": {},\
+                \"hrefs\": [\"/alarm\"]\
+            }\
     	]\
     }", getHostname(), getPort(), currentColourStability);
 
@@ -133,7 +140,11 @@ void wot::RoomLightThing::serveRoot(WiFiClient *client)
         		\"strobeoff\": {\
         			\"href\": \"/strobeoff\",\
         			\"method\": \"POST\"\
-        		}\
+        		},\
+                \"alarm\": {\
+                    \"href\": \"/alarm\",\
+                    \"method\": \"POST\"\
+                }\
         	},\
         	\"name\": \"Room Light\",\
         	\"vendor\": \"WoT Experts Group\"\
@@ -146,7 +157,7 @@ void wot::RoomLightThing::serveOnOffState(WiFiClient *client)
 {
     client->print("HTTP/1.1 200 OK\r\n");
 
-#if WOT_IFACE_TD
+#ifdef WOT_IFACE_TD
     client->print("Content-Type: application/json\r\n");
     if(powerOn) {
         client->print("Content-Length: 15\r\n\r\n{\"value\": \"on\"}");
@@ -165,7 +176,7 @@ void wot::RoomLightThing::serveOnOffState(WiFiClient *client)
 
 void wot::RoomLightThing::serveColourState(WiFiClient *client)
 {
-#if WOT_IFACE_TD
+#ifdef WOT_IFACE_TD
     const char *colorStr;
     if(currentColor == Color::White) {
         colorStr = "{\"value\": \"white\"}";
@@ -189,22 +200,37 @@ void wot::RoomLightThing::serveColourState(WiFiClient *client)
 
 void wot::RoomLightThing::updateOnOffState(WiFiClient *client, const char *data)
 {
+#ifdef WOT_IFACE_TD
+    aJsonObject *root = aJson.parse((char*)data);
+    aJsonObject *value = aJson.getObjectItem(root, "value");
+    const char *onoff = value->valuestring;
+#else
+    const char *onoff = data;
+#endif
     // Set the new power state:
-    if(!strcmp(data, "on")) {
+    if(!strcmp(onoff, "on")) {
         powerOn = true;
-    } else if(!strcmp(data, "off")) {
+        client->print("HTTP/1.1 200 OK\r\n\r\n");
+    } else if(!strcmp(onoff, "off")) {
         powerOn = false;
+        client->print("HTTP/1.1 200 OK\r\n\r\n");
     } else {
         respondBadRequest(client);
     }
-    client->print("HTTP/1.1 200 OK\r\n\r\n");
 }
 
 void wot::RoomLightThing::updateColourState(WiFiClient *client, const char *data)
 {
-    if(!strcmp(data, "white")) {
+#ifdef WOT_IFACE_TD
+    aJsonObject *root = aJson.parse((char*)data);
+    aJsonObject *value = aJson.getObjectItem(root, "value");
+    const char *color = value->valuestring;
+#else
+    const char *color = data;
+#endif
+    if(!strcmp(color, "white")) {
         currentColor = Color::White;
-    } else if(!strcmp(data, "red")) {
+    } else if(!strcmp(color, "red")) {
         currentColor = Color::Red;
     } else {
         respondBadRequest(client);
@@ -215,7 +241,9 @@ void wot::RoomLightThing::updateColourState(WiFiClient *client, const char *data
 void wot::RoomLightThing::updateStrobeOn(WiFiClient *client, const char *data)
 {
 #ifdef WOT_IFACE_TD
-    double secs = atof(data);
+    aJsonObject *root = aJson.parse((char*)data);
+    aJsonObject *value = aJson.getObjectItem(root, "value");
+    double secs = value->valuefloat;
     if(secs > 0.0) {
         powerOn = true; // Turn power on if someone wishes the strobe mode
         flashingMsRemaining = secs * 1000.0;
@@ -247,6 +275,16 @@ void wot::RoomLightThing::updateStrobeOff(WiFiClient *client)
     client->print("HTTP/1.1 200 OK\r\n\r\n");
 }
 
+void wot::RoomLightThing::invokeAlarm(WiFiClient *client)
+{
+    Serial.println("ALARM!!!");
+    // Set color to red and start flashing for one minute:
+    currentColor = Color::Red;
+    powerOn = true;
+    flashingMsRemaining = 60 * 1000.0;
+    client->print("HTTP/1.1 200 OK\r\n\r\n");
+}
+
 void wot::RoomLightThing::handleGET(const char *path, WiFiClient *client)
 {
     if(!strcmp(path, "/")) {
@@ -263,6 +301,13 @@ void wot::RoomLightThing::handleGET(const char *path, WiFiClient *client)
 
 void wot::RoomLightThing::handlePOST(const char *path, const char *data, const char *mediaType, WiFiClient *client)
 {
+#ifdef WOT_IFACE_TD
+    // In TD mode only data serialization with JSON is allowed
+    if(data && strlen(data) > 0 && strcmp(mediaType, "application/json")) {
+        respondUnsupportedMediaType(client);
+    }
+#endif
+
     if(!strcmp(path, "/onoff")) {
         updateOnOffState(client, data);
     } else if(!strcmp(path, "/colour")) {
@@ -280,15 +325,8 @@ void wot::RoomLightThing::handlePOST(const char *path, const char *data, const c
         }
 #endif
     } else if(!strcmp(path, "/alarm")) {
-#ifdef WOT_IFACE_TD
-        updateStrobeOn(client, "10000");
-#else
-        if(!strcmp(mediaType, "application/light-strobe-config+json")) {
-            updateStrobeOn(client, "10000");
-        } else {
-            respondUnsupportedMediaType(client);
-        }
-#endif
+        invokeAlarm(client);
+
     } else if(!strcmp(path, "/strobeoff")) {
     updateStrobeOff(client);
     } else {
