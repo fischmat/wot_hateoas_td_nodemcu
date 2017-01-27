@@ -163,6 +163,9 @@ unsigned short wot::queryEquivalentClasses(const char *iri, char **out,
 
 bool wot::classesEquivalent(const char *iri1, const char *iri2)
 {
+    if(!strcmp(iri1, iri2)) {
+        return true;
+    }
     // Prepare array of equivalent classes:
     char **eq = new char*[10];
     for(unsigned char j = 0; j < 10; j++) {
