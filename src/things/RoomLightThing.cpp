@@ -87,7 +87,7 @@ void wot::RoomLightThing::serveRoot(WiFiClient *client)
     			\"@type\": \"dogont:OnFlashingCommand\",\
     			\"name\": \"Turn Strobe On\",\
     			\"inputData\": {\
-    				\"valueType\": \"number\",\
+    				\"valueType\": \"integer\",\
     				\"dogont:flashingTime\": \"dbr:Second\"\
     			},\
     			\"hrefs\": [\"/strobeon\"]\
@@ -241,9 +241,16 @@ void wot::RoomLightThing::updateColourState(WiFiClient *client, const char *data
 void wot::RoomLightThing::updateStrobeOn(WiFiClient *client, const char *data)
 {
 #ifdef WOT_IFACE_TD
+    unsigned secs;
+    aJsonObject *value;
     aJsonObject *root = aJson.parse((char*)data);
-    aJsonObject *value = aJson.getObjectItem(root, "value");
-    double secs = value->valuefloat;
+    if(root && (value = aJson.getObjectItem(root, "value"))) {
+        secs = value->valueint;
+    } else {
+        respondBadRequest(client);
+        return;
+    }
+    Serial.printf("Flashing light for %d seconds\n", secs);
     if(secs > 0.0) {
         powerOn = true; // Turn power on if someone wishes the strobe mode
         flashingMsRemaining = secs * 1000.0;
