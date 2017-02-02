@@ -39,7 +39,5 @@ void loop() {
     if(button_pressed) {
       Serial.println("Button pressed");
       button_pressed = false;
-
-      // TODO: Call to controller
     }
 }
