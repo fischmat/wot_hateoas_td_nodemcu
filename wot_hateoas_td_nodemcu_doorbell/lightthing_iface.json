@@ -1,0 +1,78 @@
+{
+	"@context": [
+		"http://w3c.github.io/wot/w3c-wot-td-context.jsonld",
+		{"dogont": "http://elite.polito.it/ontologies/dogont.owl#"},
+		{"dbr": "dbpedia.org/resource/"},
+		{"dbo": "dbpedia.org/ontology/"},
+        {"ncal": "http://www.semanticdesktop.org/ontologies/2007/04/02/ncal#"}
+	],
+	"@type": "dogont:Lighting",
+	"name": "Room Light",
+	"vendor": "WoT Experts Group",
+	"uris": ["http://%s:%d/"],
+	"encodings": ["JSON"],
+	"properties": [
+		{
+			"@type": "dogont:OnOffState",
+			"name": "Powerstate",
+			"valueType": {"type": "string", "enum": ["on", "off"]},
+			"writeable": true,
+			"hrefs": ["onoff"],
+			"stability": -1
+		},
+		{
+			"@type": "dogont:ColorState",
+			"name": "Color",
+			"valueType": {
+				"type": "string",
+				"oneOf": [
+					{
+						"value": "white",
+						"dbo:Colour": "dbr:White"
+					},
+					{
+						"value": "red",
+						"dbo:Colour": "dbr:Red"
+					}
+				]
+			},
+			"writeable": true,
+			"hrefs": ["colour"],
+			"stability": "%d"
+		}
+	],
+
+	"actions": [
+        {
+            "@type": "ncal:AlarmAction",
+            "name": "Turn on alarm",
+            "inputData": {
+                "valueType": "string",
+                "oneOf": [
+                    {
+                        "constant": "white",
+                        "dbo:Colour": "dbr:White"
+                    },
+                    {
+                        "constant": "red",
+                        "dbo:Colour": "dbr:Red"
+                    }
+                ]
+            }
+        },
+		{
+			"@type": "dogont:OnFlashingCommand",
+			"name": "Turn Strobe On",
+			"inputData": {
+				"valueType": "number",
+				"dogont:flashingTime": "dbr:Second"
+			},
+			"hrefs": ["strobeon"]
+		},
+		{
+			"@type": "dogont:OffFlashingCommand",
+			"name": "Turn Strobe Off",
+			"hrefs": ["strobeoff"]
+		}
+	]
+}

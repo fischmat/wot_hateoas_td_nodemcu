@@ -1,0 +1,41 @@
+// application/roomlight+json
+{
+	"_links": {
+		"onoff": {
+			"href": "/onoff",
+			"type": "text/plain"
+		},
+		"colour": {
+			"href": "/colour",
+			"type": "text/plain"
+		}
+	},
+	"_forms": {
+		"onoff": {
+			"href": "/onoff",
+			"method": "POST",
+			"accept": "text/plain"
+		},
+		"colour": {
+			"href": "/colour",
+			"method": "POST",
+			"accept": "text/plain"
+		},
+		"strobeon": {
+			"href": "/strobeon",
+			"method": "POST",
+			"accept": "application/light-strobe-config+json"
+		},
+		"strobeoff": {
+			"href": "/strobeoff",
+			"method": "POST"
+		}
+	},
+	"name": "Room Light",
+	"vendor": "WoT Experts Group"
+}
+
+// application/light-strobe-config+json
+{
+	"duration": 10
+}

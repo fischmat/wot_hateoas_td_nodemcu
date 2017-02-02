@@ -1,0 +1,4 @@
+.pioenvs
+*.gch
+
+.piolibdeps
